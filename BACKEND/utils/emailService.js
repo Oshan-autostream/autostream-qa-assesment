@@ -2,23 +2,31 @@ require("./loadEnv");
 
 const nodemailer = require("nodemailer");
 
-// Create email transporter
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+const isEmailConfigured = Boolean(emailUser && emailPass);
+
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE || "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: emailUser,
+    pass: emailPass,
   },
 });
 
-// Verify transporter connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Email transporter error:", error);
-  } else {
-    console.log("Email transporter ready! SMTP connection established.");
-  }
-});
+if (!isEmailConfigured) {
+  console.warn(
+    "Email is not configured. Set EMAIL_USER and EMAIL_PASS in BACKEND/.env to enable SMTP."
+  );
+} else {
+  transporter.verify((error) => {
+    if (error) {
+      console.error("Email transporter error:", error);
+    } else {
+      console.log("Email transporter ready! SMTP connection established.");
+    }
+  });
+}
 
 /**
  * Send appointment reminder email
@@ -224,8 +232,12 @@ const sendAppointmentReminder = async (recipientEmail, recipientName, appointmen
       </html>
     `;
 
+    if (!isEmailConfigured) {
+      return { success: false, error: "Email is not configured" };
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: emailUser,
       to: recipientEmail,
       subject: `${appointmentTypeLabel} Reminder - ${formattedDate}`,
       html: htmlContent,
@@ -248,8 +260,12 @@ const sendAppointmentReminder = async (recipientEmail, recipientName, appointmen
  */
 const sendEmail = async (recipientEmail, subject, htmlContent) => {
   try {
+    if (!isEmailConfigured) {
+      return { success: false, error: "Email is not configured" };
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: emailUser,
       to: recipientEmail,
       subject: subject,
       html: htmlContent,
@@ -365,8 +381,12 @@ const sendResetOtpEmail = async (recipientEmail, recipientName, otp) => {
       </html>
     `;
 
+    if (!isEmailConfigured) {
+      return { success: false, error: "Email is not configured" };
+    }
+
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: emailUser,
       to: recipientEmail,
       subject: "Your Password Reset OTP - Leaf Lanka",
       html: htmlContent,
